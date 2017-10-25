@@ -5,18 +5,20 @@ require 'whacamole/stream'
 
 module Whacamole
 
-  @@config = {}
+  @@config = []
 
+  # Note: accepts multiple configs for the same app_name
+  # It is up to you to ensure that they don't overlap or conflict
   def self.configure(app_name)
-    @@config[app_name.to_s] ||= Config.new(app_name)
-    yield @@config[app_name.to_s]
+    @@config << Config.new(app_name)
+    yield @@config.last
   end
 
   def self.monitor
     threads = []
-    @@config.each do |app_name, config|
+    @@config.each do |config|
       threads << Thread.new do
-        heroku = HerokuWrapper.new(app_name, config.api_token, config.dynos, config.restart_window)
+        heroku = HerokuWrapper.new(config.app_name, config.api_token, config.dynos, config.restart_window)
 
         while true
           stream_url = heroku.create_log_session
